@@ -6,7 +6,7 @@ from app.models.schemas import RasaNLUResponse
 
 load_dotenv()
 
-RASA_API_URL = os.getenv("RASA_API_URL", "http://localhost:5005/model/parse")
+RASA_API_URL = os.getenv("RASA_API_URL", "")  # empty by default; set when Rasa is available
 
 def get_rasa_nlu_response(text: str) -> Optional[RasaNLUResponse]:
     """
@@ -18,6 +18,8 @@ def get_rasa_nlu_response(text: str) -> Optional[RasaNLUResponse]:
     Returns:
         Optional[RasaNLUResponse]: A Pydantic model of the Rasa response, or None on error.
     """
+    if not RASA_API_URL:
+        return None
     try:
         response = requests.post(RASA_API_URL, json={"text": text})
         response.raise_for_status()  # Raise an exception for bad status codes

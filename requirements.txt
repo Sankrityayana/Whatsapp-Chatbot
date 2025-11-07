@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+qrcode
+pillow
+python-dotenv
+twilio
+gunicorn
+
+# 'rasa' removed: incompatible with Python 3.13. Use Docker or a Python 3.10 venv for Rasa model parsing.
