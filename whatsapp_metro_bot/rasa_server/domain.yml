@@ -1,0 +1,49 @@
+version: "3.1"
+
+intents:
+  - book_ticket
+  - check_availability
+  - cancel_ticket
+  - help
+  - affirm
+  - deny
+
+entities:
+  - source
+  - destination
+  - date
+  - seats
+
+slots:
+  source:
+    type: text
+    influence_conversation: true
+  destination:
+    type: text
+    influence_conversation: true
+  date:
+    type: text
+    influence_conversation: true
+  seats:
+    type: number
+    min_value: 1
+    max_value: 10
+    influence_conversation: true
+
+responses:
+  utter_greet:
+  - text: "Hello! How can I help you today?"
+  utter_goodbye:
+  - text: "Goodbye!"
+  utter_ask_source:
+  - text: "Where would you like to start your journey?"
+  utter_ask_destination:
+  - text: "Where are you heading?"
+  utter_ask_date:
+  - text: "When would you like to travel?"
+  utter_ask_seats:
+  - text: "How many seats do you need?"
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

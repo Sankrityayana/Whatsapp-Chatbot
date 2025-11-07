@@ -1,0 +1,31 @@
+version: "3.1"
+
+stories:
+
+- story: happy path
+  steps:
+  - intent: book_ticket
+  - action: utter_ask_source
+  - intent: book_ticket
+    entities:
+    - source: "Central Station"
+  - action: utter_ask_destination
+  - intent: book_ticket
+    entities:
+    - destination: "Downtown"
+  - action: utter_ask_date
+  - intent: book_ticket
+    entities:
+    - date: "today"
+  - action: utter_ask_seats
+  - intent: book_ticket
+    entities:
+    - seats: "2"
+  - action: utter_goodbye
+
+- story: sad path
+  steps:
+  - intent: book_ticket
+  - action: utter_ask_source
+  - intent: deny
+  - action: utter_goodbye

@@ -1,0 +1,49 @@
+version: "3.1"
+
+nlu:
+- intent: book_ticket
+  examples: |
+    - I want to book a ticket
+    - book a metro ticket
+    - I need a ticket from [Central Station](source) to [Downtown](destination)
+    - book a ticket to [Downtown](destination)
+    - from [Uptown](source) to [Midtown](destination) for [2](seats) people
+    - need [3](seats) seats to [Airport](destination)
+    - book a ticket for [tomorrow](date)
+    - I want to travel on [next Friday](date)
+
+- intent: check_availability
+  examples: |
+    - are there any tickets available?
+    - check seat availability
+    - is the metro running from [Central](source) to [Downtown](destination)?
+
+- intent: cancel_ticket
+  examples: |
+    - cancel my booking
+    - I want to cancel my ticket
+    - please cancel the ticket I just booked
+
+- intent: help
+  examples: |
+    - help me
+    - what can you do?
+    - I need assistance
+
+- intent: affirm
+  examples: |
+    - yes
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+    - confirm
+
+- intent: deny
+  examples: |
+    - no
+    - never
+    - I don't think so
+    - don't like that
+    - no way
+    - not really
