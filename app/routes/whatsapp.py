@@ -1,7 +1,13 @@
 import os
 from fastapi import APIRouter, Form, Depends
-from twilio.rest import Client
-from twilio.twiml.messaging_response import MessagingResponse
+try:
+    from twilio.rest import Client
+    from twilio.twiml.messaging_response import MessagingResponse
+except Exception:  # allow app to start without Twilio installed
+    Client = None  # type: ignore
+    class MessagingResponse:  # minimal fallback
+        def to_xml(self):
+            return "<Response/>"
 from dotenv import load_dotenv
 
 from app.services import rasa_client, booking
@@ -18,10 +24,12 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if Client else None
 
 def send_whatsapp_message(to: str, message: str, media_url: str = None):
     """Sends a message via Twilio WhatsApp API."""
+    if not client:
+        return
     try:
         message_args = {
             'from_': TWILIO_PHONE_NUMBER,
