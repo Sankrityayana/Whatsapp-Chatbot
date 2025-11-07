@@ -1,13 +1,11 @@
 import os
-from fastapi import APIRouter, Form, Depends
+from fastapi import APIRouter, Form
 try:
     from twilio.rest import Client
     from twilio.twiml.messaging_response import MessagingResponse
-except Exception:  # allow app to start without Twilio installed
+except Exception:
     Client = None  # type: ignore
-    class MessagingResponse:  # minimal fallback
-        def to_xml(self):
-            return "<Response/>"
+    MessagingResponse = None  # type: ignore
 from dotenv import load_dotenv
 
 from app.services import rasa_client, booking
@@ -24,7 +22,26 @@ TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER')
 
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if Client else None
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) if (Client and TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN) else None
+
+
+def build_twiml_message(text: str) -> str:
+    """Return a TwiML XML string with a single Message body.
+
+    If twilio is installed, use MessagingResponse for correctness.
+    Otherwise, return a minimal TwiML string.
+    """
+    if MessagingResponse:
+        resp = MessagingResponse()
+        resp.message(text)
+        return str(resp)
+    # Minimal valid TwiML fallback
+    escaped = (
+        text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+    )
+    return f"<Response><Message>{escaped}</Message></Response>"
 
 def send_whatsapp_message(to: str, message: str, media_url: str = None):
     """Sends a message via Twilio WhatsApp API."""
@@ -51,12 +68,15 @@ def whatsapp_webhook(From: str = Form(...), Body: str = Form(...)):
     user_id = From
     user_message = Body
 
-    # Get NLU response from Rasa
+    # Get NLU response from Rasa (if available)
     nlu_data = rasa_client.get_rasa_nlu_response(user_message)
 
     if not nlu_data:
-        send_whatsapp_message(user_id, "Sorry, I'm having trouble understanding. Please try again later.")
-        return MessagingResponse().to_xml()
+        # Fallback reply without relying on outbound API
+        return build_twiml_message(
+            "Hi! I couldn't reach the NLU service right now. "
+            "You can try: 'book ticket from Alpha to Beta on 2025-11-08 at 09:30 for 2'."
+        )
 
     intent_name = nlu_data.intent.name
     response_message = ""
@@ -66,7 +86,10 @@ def whatsapp_webhook(From: str = Form(...), Body: str = Form(...)):
     else:
         response_message = booking.handle_other_intents(user_id, intent_name)
 
-    send_whatsapp_message(user_id, response_message)
+    # Reply via TwiML (works without Twilio REST creds). Also send proactive message if creds present.
+    if response_message:
+        if client:
+            send_whatsapp_message(user_id, response_message)
 
     # Check if payment was successful and send QR code
     booking_data = cache.get_cache(user_id)
@@ -82,7 +105,10 @@ def whatsapp_webhook(From: str = Form(...), Body: str = Form(...)):
         # 3. Get a public URL for the image.
         # 4. Send that URL in the media_url parameter.
         # For this example, we will just send another text message as a placeholder.
-        send_whatsapp_message(user_id, f"[Placeholder for QR Code for ticket: {ticket_info}]")
+        # Return a text placeholder; a production app should return a media URL.
+        if client:
+            send_whatsapp_message(user_id, f"[QR Code for ticket: {ticket_info}]")
         cache.clear_cache(user_id) # Clean up after successful booking
 
-    return MessagingResponse().to_xml()
+    # Final reply to Twilio webhook
+    return build_twiml_message(response_message or "Processing your request...")
